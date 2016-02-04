@@ -14,7 +14,7 @@ S = chol(dilated_cov);
 % put the columns into W_sigma
 W_sigma(:, 1:covn) = S;
 W_sigma(:, covn+1:end) = -S;
-% calculate 
+% calculate X_sigma from W_sigma
 
 
 
