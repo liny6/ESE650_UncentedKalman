@@ -1,8 +1,8 @@
-close all
+
 %% load data
 addpath ../calib
 [Imu, Vicon] = loadfiles(1);
-gravity = [0; 0; 9.81];
+gravity = [1; 1; 1];
 
 wa1 = [10.6526; 10.5767; 10.4773];
 wa2 = [-511; -500; 502];
@@ -37,14 +37,14 @@ R = zeros(6);
 
 x(1) = 1;
 
-q_cov = 0.015;
-w_cov = 0.00001;
-accel_cov = 0.05;
-gyro_cov = 0.0001;
+q_cov = 3e-3;
+w_cov = 0.8;
+accel_cov = 5e-2;
+gyro_cov = 1e-2;
 
 P = 0.1*diag([2*pi, 2*pi, 2*pi, pi, pi, pi]);
-Q = 1e-8* diag([q_cov, q_cov, q_cov, w_cov, w_cov, w_cov]);
-R = 1e-1*diag([accel_cov, accel_cov, accel_cov, gyro_cov, gyro_cov, gyro_cov]);
+Q = diag([q_cov, q_cov, q_cov, w_cov, w_cov, w_cov]);
+R = diag([accel_cov, accel_cov, accel_cov, gyro_cov, gyro_cov, gyro_cov]);
 
 %% run unscented kalman filter
 
@@ -54,7 +54,7 @@ for i = 1:nt
     else
         delta_t = Imu.ts(i) - Imu.ts(i-1);
     end
-    [x, P] = UnscentedKalman(x, P, Z_calib(:, i), delta_t, Q, R);
+    [x, P] = UnscentedKalman(x, P, Z_calib(:, i), delta_t, delta_t*Q, R);
     x(1:4) = x(1:4)/norm(x(1:4));
     X_hist(:, i) = x;
 end
@@ -74,6 +74,7 @@ hold on
 %plot(Imu.ts, Z_calib(1, :));
 plot(Vicon.ts, Acc_GT(1,:));
 
+%{
 figure
 
 plot(Imu.ts, g_hist(2, :));
@@ -87,3 +88,4 @@ plot(Imu.ts, g_hist(3, :));
 hold on
 %plot(Imu.ts, Z_calib(3, :));
 plot(Vicon.ts, Acc_GT(3,:));
+%}

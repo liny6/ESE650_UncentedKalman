@@ -31,31 +31,38 @@ W_sigma(4:6, :) = bsxfun(@minus, Y_sigma(5:7, :), x_a_priori(5:7));
 %% calculate P_a_priori from the new W_sigma
 P_a_priori = 1/2/n*(W_sigma*W_sigma');
 
-%% project measurements and find innovation
+%% depending on delta_t, decide if I want to take in the measurement
 
-% first, find the sigma points for measurements
-Z_sigma = H_measurement( Y_sigma );
-% take the mean
-z_a_priori = mean(Z_sigma, 2);
-% find innovation
-nu = z_meas - z_a_priori;
-
-%% find innovation's covariance
-Z_sigma_err = bsxfun(@minus, Z_sigma, z_a_priori);
-P_zz = 1/2/n * (Z_sigma_err * Z_sigma_err');
-P_nu = P_zz + R;
-
-%% find cross correlation P_xz
-P_xz = 1/2/n * W_sigma * Z_sigma_err';
-
-%% find kalman gain and update state vector/ covariance
-% kalman gain
-K = P_xz/P_nu;
-% update x
-x_delta = K*nu;
-x(1:4) = quatmult(x_last(1:4), rotvec2quat(x_delta(1:3)));
-x(5:7) = x_last(5:7) + x_delta(4:6);
-% update P
-P = P_a_priori - K * P_nu * K';
+if delta_t < 0.001
+    x = x_a_priori;
+    P = P_a_priori;
+else
+    %% project measurements and find innovation
+    
+    % first, find the sigma points for measurements
+    Z_sigma = H_measurement( Y_sigma );
+    % take the mean
+    z_a_priori = mean(Z_sigma, 2);
+    % find innovation
+    nu = z_meas - z_a_priori;
+    
+    %% find innovation's covariance
+    Z_sigma_err = bsxfun(@minus, Z_sigma, z_a_priori);
+    P_zz = 1/2/n * (Z_sigma_err * Z_sigma_err');
+    P_nu = P_zz + R;
+    
+    %% find cross correlation P_xz
+    P_xz = 1/2/n * W_sigma * Z_sigma_err';
+    
+    %% find kalman gain and update state vector/ covariance
+    % kalman gain
+    K = P_xz/P_nu;
+    % update x
+    x_delta = K*nu;
+    x(1:4) = quatmult(x_last(1:4), rotvec2quat(x_delta(1:3)));
+    x(5:7) = x_last(5:7) + x_delta(4:6);
+    % update P
+    P = P_a_priori - K * P_nu * K';  
+end
 
 end
