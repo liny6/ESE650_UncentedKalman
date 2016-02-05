@@ -1,4 +1,5 @@
 [Imu, Vicon] = loadfiles(1);
+%{
 %% condition data
 Imu.vals(1, :) = - Imu.vals(1, :);
 Imu.vals(2, :) = - Imu.vals(2, :);
@@ -6,7 +7,7 @@ temp = Imu.vals(4, :);
 Imu.vals(4:5, :) = Imu.vals(5:6, :);
 Imu.vals(6, :) = temp;
 % inverting the signs of Ax and Ay; move Wz down two rows
-
+%}
 %% Get and Plot ground truth vs Measured value
 
 %accelerometer part
@@ -32,6 +33,8 @@ for i = 1:3
     wa2(i) = C(2);
 end
 
+Acc_meas_calib = bsxfun(@times, bsxfun(@minus, Acc_meas_int, wa2), 1./wa1);
+
 %gyro part
 
 [omega_t, OmegaGT] = getOmegaGT(Vicon);
@@ -55,4 +58,9 @@ for i = 1:3
     ww1(i) = C(1);
     ww2(i) = C(2);
 end
+
+omega_meas_calib = 1/69*(Omega_meas_int - 373);
+
+%%
+
 

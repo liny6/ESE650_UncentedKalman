@@ -11,6 +11,6 @@ for i = 1:nc
     X_sigma(1:4, i) = quatmult(q, q_wi);
 end
 
-X_sigma(5:7, :) = bsxfun(@plus, W_sigma(5:7, :), w);
+X_sigma(5:7, :) = bsxfun(@plus, W_sigma(4:6, :), w);
 end
 

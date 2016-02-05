@@ -5,7 +5,7 @@ function Y_sigma = A_process( X_sigma, delta_t )
 [nr, nc] = size(X_sigma);
 Y_sigma = zeros(nr, nc);
 
-for i = 1:n
+for i = 1:nc
     q_X = X_sigma(1:4, i);
     omega = X_sigma(5:7, i) * delta_t;
     q_diff = rotvec2quat(omega);

@@ -9,7 +9,7 @@ err = zeros(3, nc);
 err_norm = 1;
 
 %loop until convergence
-while( err_norm > 0.001 )
+while( err_norm > 0.00001 )
     for i = 1:nc
         qi = Y_sigma(1:4, i);
         qe = quatmult(qi, quatinv(q_t)); %quaternion error
