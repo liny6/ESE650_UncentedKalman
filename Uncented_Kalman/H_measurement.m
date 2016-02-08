@@ -1,7 +1,7 @@
 function Z_sigma = H_measurement( Y_sigma )
 % this measurement suite contains acclerometer and gyro
 
-gravity = [0; 0; 9.81];% expected gravity when it's at orientation [1; 0; 0; 0]
+gravity = [0; 0; 1];% expected gravity when it's at orientation [1; 0; 0; 0]
 [nr, nc] = size(Y_sigma);
 Z_sigma = zeros(6, nc);
 

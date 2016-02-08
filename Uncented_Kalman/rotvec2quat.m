@@ -7,5 +7,6 @@ else
     rot_len = norm(rotvec);
     rot_dir = rotvec/rot_len;
     q = [cos(rot_len/2); rot_dir.*sin(rot_len/2)];
+    q = q/norm(q);
 end
 

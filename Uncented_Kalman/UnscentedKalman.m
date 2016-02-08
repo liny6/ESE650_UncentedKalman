@@ -1,5 +1,9 @@
 function [x, P] = UnscentedKalman(x_last, P_last, z_meas, delta_t, Q, R)
 
+%normalize gravity vector
+acc_len = norm(z_meas(1:3));
+z_meas(1:3) = z_meas(1:3)/acc_len;
+
 %% parameters and variables
 x = zeros(7, 1);
 n = length( x_last ); % 7 in this homework
@@ -42,12 +46,21 @@ else
     % first, find the sigma points for measurements
     Z_sigma = H_measurement( Y_sigma );
     % take the mean
-    z_a_priori = mean(Z_sigma, 2);
+    %z_a_priori = mean(Z_sigma, 2);
+    z_a_priori = H_measurement(x_a_priori);
     % find innovation
     nu = z_meas - z_a_priori;
     
+    % throw out bad accelerometer measurements
+    
+    if acc_len > 10 || acc_len < 9.5
+        nu(1:3) = zeros(3,1);
+    end
+    
     %% find innovation's covariance
-    Z_sigma_err = bsxfun(@minus, Z_sigma, z_a_priori);
+    Z_sigma_err = bsxfun(@minus, Z_sigma, mean(Z_sigma, 2));
+    %Z_sigma_err = H_err(W_sigma);
+    %Z_sigma_err = H_err(W_sigma, Y_sigma, x_a_priori);
     P_zz = 1/2/n * (Z_sigma_err * Z_sigma_err');
     P_nu = P_zz + R;
     
@@ -59,8 +72,8 @@ else
     K = P_xz/P_nu;
     % update x
     x_delta = K*nu;
-    x(1:4) = quatmult(x_last(1:4), rotvec2quat(x_delta(1:3)));
-    x(5:7) = x_last(5:7) + x_delta(4:6);
+    x(1:4) = quatmult(x_a_priori(1:4), rotvec2quat(x_delta(1:3)));
+    x(5:7) = x_a_priori(5:7) + x_delta(4:6);
     % update P
     P = P_a_priori - K * P_nu * K';  
 end

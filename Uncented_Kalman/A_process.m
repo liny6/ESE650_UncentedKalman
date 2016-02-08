@@ -8,6 +8,7 @@ Y_sigma = zeros(nr, nc);
 for i = 1:nc
     q_X = X_sigma(1:4, i);
     omega = X_sigma(5:7, i) * delta_t;
+    %omega = quatrot(q_X, omega);
     q_diff = rotvec2quat(omega);
     Y_sigma(1:4, i) = quatmult(q_X, q_diff); 
 end

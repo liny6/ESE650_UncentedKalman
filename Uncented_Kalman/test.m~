@@ -1,17 +1,20 @@
-close all
+
+dataset = 8;
 %% load data
 addpath ../calib
-[Imu, Vicon] = loadfiles(1);
+[Imu, Vicon] = loadfiles(dataset);
 gravity = [1; 1; 1];
 
 wa1 = [10.6526; 10.5767; 10.4773];
 wa2 = [-511; -500; 502];
 
-Z_calib = [bsxfun(@times, bsxfun(@minus, Imu.vals(1:3, :), wa2), 1./wa1); (Imu.vals(4:6, :) - 373)/69];
+Z_calib = [bsxfun(@times, bsxfun(@minus, Imu.vals(1:3, :), wa2), 1./wa1); bsxfun(@minus, Imu.vals(4:6, :), [373; 373; 369])/69];
 [~, nt] = size(Z_calib);
 
 [~, ~, vicon_nt] = size(Vicon.rots);
 Acc_GT = zeros(3, vicon_nt);
+
+[omega_t, OmegaGT] = getOmegaGT(Vicon);
 
 for i = 1:vicon_nt
     Acc_GT(:, i) = Vicon.rots(:, :, i)' * gravity;
@@ -37,14 +40,26 @@ R = zeros(6);
 
 x(1) = 1;
 
-q_cov = 0.003;
-w_cov = 6;
-accel_cov = 5e-2;
-gyro_cov = 1e-;
+q_cov = 1e-5;
+w_cov = 3e-3;
+accel_cov = 1.4e-4;
+gyro_cov = 7.5e-7;
 
-P = 0.1*diag([2*pi, 2*pi, 2*pi, pi, pi, pi]);
-Q = 1e-2* diag([q_cov, q_cov, q_cov, w_cov, w_cov, w_cov]);
-R = diag([accel_cov, accel_cov, accel_cov, gyro_cov, gyro_cov, gyro_cov]);
+P = 0*diag([0.2*pi, 0.2*pi, 0.2*pi, pi, pi, pi]);
+
+Q = 0.5*[q_cov, 0,     0,     0,     0,     0;
+     0,     q_cov, 0,     0,     0,     0;
+     0,     0,     q_cov, 0,     0,     0;
+     0,     0,     0,     w_cov, 0,     0;
+     0,     0,     0,     0,     w_cov, 0;
+     0,     0,     0,     0,     0,     w_cov];
+ 
+R = [accel_cov, 0,         0,         0,        0,        0;
+     0,         accel_cov, 0,         0,        0,        0;
+     0,         0,         accel_cov, 0,        0,        0;
+     0,         0,         0,         gyro_cov, 0,        0;
+     0,         0,         0,         0,        gyro_cov, 0;
+     0,         0,         0,         0,        0,        gyro_cov];
 
 %% run unscented kalman filter
 
@@ -54,13 +69,15 @@ for i = 1:nt
     else
         delta_t = Imu.ts(i) - Imu.ts(i-1);
     end
-    [x, P] = UnscentedKalman(x, P, Z_calib(:, i), delta_t, delta_t*Q, delta_t*R);
+    [x, P] = UnscentedKalman(x, P, Z_calib(:, i), delta_t, delta_t*Q, R);
     x(1:4) = x(1:4)/norm(x(1:4));
     X_hist(:, i) = x;
+    fprintf('%d\n', i);
 end
 
-%% get X_hist to rotate gravity
 
+%% get X_hist to rotate gravity
+%{
 g_hist = zeros(3, nt);
 
 for i = 1:nt
@@ -69,22 +86,63 @@ end
 
 figure
 
+%{
 plot(Imu.ts, g_hist(1, :));
 hold on
 %plot(Imu.ts, Z_calib(1, :));
 plot(Vicon.ts, Acc_GT(1,:));
-
+%}
 
 figure
 
+%{
 plot(Imu.ts, g_hist(2, :));
 hold on
 %plot(Imu.ts, Z_calib(2, :));
 plot(Vicon.ts, Acc_GT(2,:));
+%}
 
 figure
-
+%{
 plot(Imu.ts, g_hist(3, :));
 hold on
 %plot(Imu.ts, Z_calib(3, :));
 plot(Vicon.ts, Acc_GT(3,:));
+%}
+%{
+figure
+
+plot(Imu.ts, X_hist(5, :))
+hold on
+plot(omega_t, OmegaGT(1,:));
+
+figure
+
+plot(Imu.ts, X_hist(6, :))
+hold on
+plot(omega_t, OmegaGT(2,:));
+
+figure
+
+plot(Imu.ts, X_hist(7, :))
+hold on
+plot(omega_t, OmegaGT(3,:));
+
+
+
+%% plot
+load(sprintf('../cam/cam%d.mat', dataset));
+
+R_est = quat2rotm(X_hist(1:4, :)');
+start = 1;
+count = start;
+for i = Imu.ts(start:end)
+    [~, idx] = min(abs(ts-i));
+    figure(1)
+    subplot(1, 2, 1);
+    imshow(cam(:,:,:,idx));
+    subplot(1, 2, 2);
+    rotplot(R_est(:,:,count));
+    count = count + 1;
+end
+%}

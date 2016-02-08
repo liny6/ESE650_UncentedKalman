@@ -7,9 +7,9 @@ lx = 3.0;
 ly = 1.5;
 lz = 1.0;
 
-x = .5*[+lx -lx +lx -lx +lx -lx +lx -lx;
-        +ly +ly -ly -ly +ly +ly -ly -ly;
-        +lz +lz +lz +lz -lz -lz -lz -lz];
+x = .5*[+lx -lx     +lx -lx      +lx -lx     +lx -lx     ;
+        +ly +ly-0.7 -ly -ly+0.7  +ly +ly-0.7 -ly -ly+0.7;
+        +lz +lz-0.7 +lz +lz-0.7  -lz -lz+0.7 -lz -lz+0.7];
 
 xp = R*x;
 ifront = [1 3 7 5 1];
