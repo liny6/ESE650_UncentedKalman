@@ -1,0 +1,76 @@
+\documentclass[english]{article}
+
+\usepackage[latin9]{inputenc}
+\usepackage[letterpaper]{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\newcommand{\grav}{\overrightarrow{g}}
+\newcommand{\rotvec}{\overrightarrow{\theta}}
+
+\title{ESE 650, Learning in Robotics, Spring 2016: Project2 \\
+Yu-Cheng Lin}
+\date{}
+
+\begin{document}
+\maketitle
+\section*{Introduction}
+This document describes my approaches to project 2: attitude estimation with accelerometer and gyroscope with Kalman filter.
+\section*{Calibration and obtaining ground truth}
+Before calibration, I must obtain ground truth from the vicon data. The orientation was easy to recover since the vicon data conveniently provided rotation matrices. Note that the rotation matrices actually describes the rotation from the body frame to inertial frame. Therefore, I must rotate the gravity vector $[0 0 9.81]^T$ with the transpose of the given vicon data.
+\[\overrightarrow{g_b} = R_{vicon}^T\overrightarrow{g_w} \]
+where subscript w denotes world frame and b denotes body frame.\\
+The angular velocity can be obtained by the numerical derivative of the orientation. However, I should not directly take the numerical derivative of a rotation matrix. Instead, I can describe a change in rotation $R_e$ so that the rotation at time step t $R_t$ can be followed by $R_e$ to obtain the rotation at time step t+1.
+\[ R_tR_e = R_{t+1} \]
+\[R_e = R_t^TR_{t+1} \]
+Then, I can take this rotation $R_e$ and convert it to a rotation vector $\overrightarrow{\theta}$ such that $e^{\overrightarrow{\theta}} = R_e$. Take $\overrightarrow{\theta}$ and then divide by the elapsed time. I can get an estimate of the angular velocity. However, such reading is very noisy. To compensate for the noise, I ran the numerical derivative through a 6th order Butterworth filter to obtain smooth results.\\
+The calibration for the sensors were done by inspection instead of linear regression. This works better because matching time stamps of vicon and the Imu is difficult (some interpolation will be needed), and linear regression is suceptable to noise. Perhaps a L-2 penalized linear regression with the values by inspection as prior can work very well, but it is not the focus of the project. Following plots are the results I obtained from training set 1.
+\\\\
+\includegraphics[scale=0.7]{vicon_g.jpg}\\
+Expected gravity measurement given vicon data\\
+
+
+
+\includegraphics[scale=0.7]{imu_g.jpg}\\
+measured gravity by IMU\\
+
+
+
+\includegraphics[scale=0.7]{vicon_omega.jpg}\\
+Expected angular velocity measurement given vicon data\\
+
+
+
+\includegraphics[scale=0.7]{imu_omega.jpg}\\
+measured angular velocity by IMU\\
+
+
+\section*{Obtaining Orientation with accelerometer}
+It is mathematically impossible to obtain the full orientation with only one vector measurement. However, from this vector measurement, I can deduct two degrees of freedom in a rotatoin. Let's work under the framework of euler angles to get more intuition.\\
+First, given a normalized gravity vector $\grav$ in the world frame with direction in $[0 0 1]^T$. and a rotation matrix $R$ from body frame to world frame. We can see that $R^T\grav$ picks out the third row of the rotation matrix $R$ and set them equal to the measured gravity.
+\[
+R_3 = \begin{bmatrix} g_x & g_y & g_z \end{bmatrix}
+\]
+Now, let's write $R$ in terms of euler angle with convention ZYX. 
+\[R_3 = \grav^T = \begin{bmatrix}
+\sin{\theta} & \cos{\theta}\sin{\phi} & \cos{\theta}\cos{\phi}
+\end{bmatrix} \]
+Here, we have two equations and two unknowns. Note that the gravity vector only gives me two degrees of freedom because it describes a direction (The vector has unit norm). The accleration alone does not give me any information about the Yaw.\\\\
+
+\includegraphics[scale = 0.7]{roll_acc.jpg}\\
+measured roll angle by accelerometer\\
+\includegraphics[scale = 0.7]{pitch_acc.jpg}\\
+measured pitch angle by accelerometer\\
+
+\section*{Obtaining Orientation with gyroscope}
+The gyroscope can be numerically integrated to get the change in orientation. We can write the change of rotation as $\omega \Delta t$ so it's a rotation vector $\rotvec$. We can take the exponential of the anti-symmetric matrix form of this vector to obtain a differentail rotation matrix $\Delta R$. Post multiply this matrix to the current rotation matrix will give me the new rotation matrix.However, without knowledge of initial condition, this method can be very unreliable. For the puposes of this project, I will assume that the initial condition is at $R=I$.\\\\
+
+\includegraphics[scale = 0.7]{roll_gryo.jpg}\\
+measured roll angle by gyroscope\\
+\includegraphics[scale = 0.7]{pitch_gyro.jpg}\\
+measured pitch angle by gyroscope\\
+\includegraphics[scale = 0.7]{yaw_gyro.jpg}\\
+measured yaw angle by gyroscope\\
+\end{document}
