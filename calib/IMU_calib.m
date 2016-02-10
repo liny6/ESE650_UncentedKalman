@@ -4,7 +4,7 @@ function z = IMU_calib(z_ADC)
 [~, nt] = size(z_ADC);
 
 Ka = 1/10;
-Kw = 1/60;
+Kw = 1/70;
 Ba = [-500; -500; 500];
 Bw = [375; 375; 375];
 
