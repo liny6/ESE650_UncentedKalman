@@ -94,5 +94,14 @@ roll angle of dataset1 estimated by my UKF\\
 pitch angle of dataset1 estimated by my UKF\\
 \includegraphics[scale = 0.7]{yaw_kalman1.jpg}\\
 yaw angle of dataset1 estimated by my UKF\\
+\subsection*{Image Stitching}
+Since my attitude estimate works well enough, I moved onto image stitching. My approach is simple. Define a camera frame which the x-axis projects forward, and z axis goes up. Associate the z direction with the row pixels and the y axis with column pixels. Define some arbitrary field of view $\gamma$ and given image height $h$, width $w$ I can calculate a vector in direction 
+\[\begin{bmatrix}
+\frac{h}{\tan{\gamma/2}} & \frac{w}{2} - p_i & \frac{h}{2} - p_j
+\end{bmatrix}\]
+
+where $p_i$ and $p_j$ denotes pixel position in the image. Rotate this vector with estimated quaternion, find the corresponding spherical coordinate (omitting radius). Map the spherical angles to the rows and columns of a big image. I will get a panorama image.\\
+
+\includegraphics[scale=0.3]{backbackray.jpg}
 
 \end{document}

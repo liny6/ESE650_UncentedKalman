@@ -24,7 +24,7 @@ while( err_norm > 0.00001 )
 end
 
 %calculate the mean of the angular velocities
-mu(5:13) = mean(Y_sigma(5:13, :), 2);
+mu(5:10) = mean(Y_sigma(5:10, :), 2);
 mu(1:4) = q_t;
 %update errors for later use (to calculate covariance)
 errors = err;

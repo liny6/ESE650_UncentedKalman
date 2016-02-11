@@ -12,4 +12,4 @@ for i = 1:nc
     Y_sigma(1:4, i) = quatmult(q_X, q_diff); 
 end
 
-Y_sigma(5:13, :) = X_sigma(5:13, :);
+Y_sigma(5:10, :) = X_sigma(5:10, :);

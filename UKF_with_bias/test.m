@@ -1,7 +1,8 @@
 close all
 %% load data
 addpath ../calib
-[Imu, Vicon] = loadfiles(1);
+dataset = 1;
+[Imu, Vicon] = loadfiles(dataset);
 gravity = [1; 1; 1];
 
 wa1 = [10.6526; 10.5767; 10.4773];
@@ -26,21 +27,20 @@ for i = 1:6
     R_cov(i) = cov(Imu.vals(i, 1:765));
 end
 
-X_hist = zeros(13, nt);
+X_hist = zeros(10, nt);
 
 
 %% Declare Variables
 
 % state vector
-x = zeros(13,1);
-x(8:10) = wa2;
-x(11:13) = [373, 373, 370];
+x = zeros(10,1);
+x(8:10) = [373, 373, 370];
 % measurement vector
 z_meas = zeros(6, 1);
 % state covariance
-P = zeros(12);
+P = zeros(9);
 % process model covariance
-Q = zeros(12);
+Q = zeros(9);
 % measurement model covariance
 R = zeros(6);
 
@@ -48,15 +48,15 @@ R = zeros(6);
 
 x(1) = 1;
 
-q_cov = 8e-5;
+q_cov = 1e-10;
 w_cov = 5e-5;
-bias_cov = [2e-3*ones(1, 3), 2e-3*ones(1, 3)];
+bias_cov = 10e-3*ones(1, 3);
 
 
-acc_cov = 55*ones(1, 3);
-gyro_cov = 8*ones(1, 3);
+acc_cov = 20e-3*ones(1, 3);
+gyro_cov = 3e-3*ones(1, 3);
 
-P = 1e-3*diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1, 1, 1, 1, 1, 1]);
+P = 1e-2*diag([0.001, 0.001, 0.001, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);
 Q = diag([q_cov, q_cov, q_cov, w_cov, w_cov, w_cov, bias_cov]);
 R = diag([acc_cov, gyro_cov]);
 
@@ -77,6 +77,7 @@ end
 %% get X_hist to rotate gravity
 
 myrpy = quat2eul(X_hist(1:4, :)');
+%{
 GTrpy = rotm2eul(Vicon.rots);
 
 figure
@@ -104,11 +105,33 @@ plot(Vicon.ts, Acc_GT(2,:));
 %}
 
 figure
-plot(Imu.ts, myrpy(:, 2))
+plot(Imu.ts, myrpy(:, 3))
 hold on
-plot(Vicon.ts, GTrpy(:, 2))
+plot(Vicon.ts, GTrpy(:, 3))
 
 figure
-plot(Imu.ts, X_hist(5, :))
+plot(Imu.ts, X_hist(7, :))
 hold on
-plot(omega_t, OmegaGT(1,:))
+plot(omega_t, OmegaGT(3,:))
+%}
+%% plot
+
+load(sprintf('../cam/cam%d.mat', dataset))
+R_est = quat2rotm(X_hist(1:4, :)');
+%stitchrpy = [myrpy(:, 1), myrpy(:, 2), myrpy(:,3)];
+%R_est = eul2rotm(stitchrpy);
+%{
+
+start = 1500;
+count = start;
+for i = Imu.ts(start:end)
+    [~, idx] = min(abs(ts-i));
+    figure(6)
+    subplot(1, 2, 1);
+    imshow(cam(:,:,:,idx));
+    subplot(1, 2, 2);
+    rotplot(R_est(:,:,count));
+    count = count + 1;
+end
+%}
+imstitched = stitch(Imu.ts, R_est, ts, cam);

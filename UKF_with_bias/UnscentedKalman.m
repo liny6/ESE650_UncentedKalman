@@ -1,7 +1,9 @@
 function [x, P] = UnscentedKalman(x_last, P_last, z_meas, delta_t, Q, R)
 
+grav_len = norm((z_meas(1:3) - [-511; -500; 502])/10.5);
+z_meas(1:3) = (z_meas(1:3) - [-511; -500; 502])/10.5/grav_len;
 %% parameters and variables
-x = zeros(13, 1);
+x = zeros(10, 1);
 n = length( x_last ); % 19 with calibration
 [covn, ~] = size( P_last ); % 18 with calibration
 W_sigma = zeros( covn, 2*covn ); % difference to sigma points 18x18 with calibration
@@ -25,16 +27,17 @@ Y_sigma = A_process( X_sigma, delta_t );
 
 %% Transform Y_sigma to transformed error
 W_sigma(1:3, :) = errors; %take the error straight from the last cycle of gradient descent
-W_sigma(4:12, :) = bsxfun(@minus, Y_sigma(5:13, :), x_a_priori(5:13));
+W_sigma(4:9, :) = bsxfun(@minus, Y_sigma(5:10, :), x_a_priori(5:10));
 
 %% calculate P_a_priori from the new W_sigma
 P_a_priori = 1/2/n*(W_sigma*W_sigma');
 
 %% depending on delta_t, decide if I want to take in the measurement
 
-if delta_t < 0.001
+if delta_t < 0.001 || grav_len > 10.2 || grav_len < 9.5
     x = x_a_priori;
-    P = P_a_priori;
+    P = P_last;
+    grav_len
 else
     %% project measurements and find innovation
     
@@ -59,7 +62,7 @@ else
     % update x
     x_delta = K*nu;
     x(1:4) = quatmult(x_a_priori(1:4), rotvec2quat(x_delta(1:3)));
-    x(5:13) = x_a_priori(5:13) + x_delta(4:12);
+    x(5:10) = x_a_priori(5:10) + x_delta(4:9);
     % update P
     P = P_a_priori - K * P_nu * K';  
 end
